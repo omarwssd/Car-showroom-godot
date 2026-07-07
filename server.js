@@ -5,7 +5,14 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+
+// =========================
+// EVENT TIME
+// =========================
+
 const EVENT_DURATION = 5 * 24 * 60 * 60 * 1000;
+const WAIT_DURATION = 24 * 60 * 60 * 1000;
+
 
 
 // =========================
@@ -13,10 +20,18 @@ const EVENT_DURATION = 5 * 24 * 60 * 60 * 1000;
 // =========================
 
 let currentEvent = {
+
     id: 1,
+
+    state: "running",
+
     startTime: Date.now(),
-    endTime: Date.now() + EVENT_DURATION
+
+    endTime:
+    Date.now() + EVENT_DURATION
+
 };
+
 
 
 // =========================
@@ -24,85 +39,185 @@ let currentEvent = {
 // =========================
 
 let cars = [];
+
 let votes = [];
+
 let winners = [];
 
 
+
 // =========================
-// CHECK EVENT
+// EVENT CHECK
 // =========================
 
-function checkEvent() {
+function checkEvent(){
 
-    if (Date.now() >= currentEvent.endTime) {
-        resetEvent();
+
+    let now = Date.now();
+
+
+
+    // 5 DAY EVENT END
+
+    if(
+
+        currentEvent.state === "running" &&
+
+        now >= currentEvent.endTime
+
+    ){
+
+        finishEvent();
+
     }
+
+
+
+    // 1 DAY WAIT END
+
+    if(
+
+        currentEvent.state === "waiting" &&
+
+        now >= currentEvent.endTime
+
+    ){
+
+        startNewEvent();
+
+    }
+
 
 }
 
 
+
 // =========================
-// RESET EVENT
+// FINISH EVENT
 // =========================
 
-function resetEvent() {
-
-    console.log("🏁 Car Show Finished");
+function finishEvent(){
 
 
-    if (cars.length > 0) {
+    console.log(
+        "🏁 Car Show Finished"
+    );
 
-        let winner = [...cars]
-            .sort((a,b) => b.votes - a.votes)[0];
+
+
+    if(cars.length > 0){
+
+
+        let winner =
+        [...cars]
+        .sort(
+            (a,b)=>b.votes-a.votes
+        )[0];
+
 
 
         winners.push({
 
-            event_id: currentEvent.id,
+            event_id:
+            currentEvent.id,
 
-            username: winner.username,
+            username:
+            winner.username,
 
-            car_name: winner.car_name,
+            car_name:
+            winner.car_name,
 
-            description: winner.description,
+            description:
+            winner.description,
 
-            votes: winner.votes,
+            votes:
+            winner.votes,
 
-            date: Date.now()
+            date:
+            Date.now()
 
         });
+
 
 
         console.log(
             "🏆 Winner:",
             winner.username
         );
+
     }
 
 
+
+    // Enter waiting period
+
+    currentEvent.state = "waiting";
+
+
+    currentEvent.endTime =
+    Date.now() + WAIT_DURATION;
+
+
+
+    console.log(
+        "⏳ Waiting 1 day before next event"
+    );
+
+}
+
+
+
+// =========================
+// START NEW EVENT
+// =========================
+
+function startNewEvent(){
+
+
     cars = [];
+
     votes = [];
+
 
 
     currentEvent = {
 
-        id: currentEvent.id + 1,
 
-        startTime: Date.now(),
+        id:
+        currentEvent.id + 1,
 
-        endTime: Date.now() + EVENT_DURATION
+
+        state:
+        "running",
+
+
+        startTime:
+        Date.now(),
+
+
+        endTime:
+        Date.now() + EVENT_DURATION
+
 
     };
 
 
+
     console.log(
+
         "🚗 New Car Show Event:",
         currentEvent.id
+
     );
+
 }
 
 
-setInterval(checkEvent, 60000);
+
+setInterval(
+    checkEvent,
+    60000
+);
 
 
 
@@ -110,25 +225,46 @@ setInterval(checkEvent, 60000);
 // EVENT INFO
 // =========================
 
-app.get("/event", (req,res)=>{
+app.get("/event",(req,res)=>{
+
 
     checkEvent();
 
+
+
     res.json({
 
-        id: currentEvent.id,
 
-        start_time: currentEvent.startTime,
+        id:
+        currentEvent.id,
 
-        end_time: currentEvent.endTime,
+
+        state:
+        currentEvent.state,
+
+
+        start_time:
+        currentEvent.startTime,
+
+
+        end_time:
+        currentEvent.endTime,
+
 
         time_remaining:
+
         Math.max(
+
             0,
-            currentEvent.endTime - Date.now()
+
+            currentEvent.endTime -
+            Date.now()
+
         )
 
+
     });
+
 
 });
 
@@ -138,9 +274,27 @@ app.get("/event", (req,res)=>{
 // SUBMIT CAR
 // =========================
 
-app.post("/submit_car", (req,res)=>{
+app.post("/submit_car",(req,res)=>{
+
 
     checkEvent();
+
+
+
+    if(currentEvent.state !== "running"){
+
+
+        return res.json({
+
+            success:false,
+
+            message:
+            "Car show is currently closed"
+
+        });
+
+    }
+
 
 
     const {
@@ -153,9 +307,6 @@ app.post("/submit_car", (req,res)=>{
 
         owned_car,
 
-
-        // VISUAL UPGRADES
-
         suspension_front,
 
         suspension_rear
@@ -166,30 +317,15 @@ app.post("/submit_car", (req,res)=>{
 
 
     if(
+
         !username ||
+
         !car_name ||
+
         !description ||
+
         !owned_car
-    ){
 
-        return res.status(400).json({
-
-            success:false,
-
-            message:"Missing car information"
-
-        });
-
-    }
-
-
-
-    // One submission per player
-
-    if(
-        cars.find(
-            c => c.username === username
-        )
     ){
 
         return res.status(400).json({
@@ -197,7 +333,7 @@ app.post("/submit_car", (req,res)=>{
             success:false,
 
             message:
-            "You already submitted a car this event"
+            "Missing car information"
 
         });
 
@@ -205,34 +341,50 @@ app.post("/submit_car", (req,res)=>{
 
 
 
-    const car = {
+    if(
+
+        cars.find(
+            c=>c.username===username
+        )
+
+    ){
+
+        return res.status(400).json({
+
+            success:false,
+
+            message:
+            "You already submitted a car"
+
+        });
+
+    }
 
 
-        id: Date.now(),
+
+    let car = {
+
+
+        id:
+        Date.now(),
 
 
         event_id:
         currentEvent.id,
 
 
-
-        // PLAYER
-
-        username: username,
+        username,
 
 
-
-        // CAR
-
-        owned_car: owned_car,
-
-        car_name: car_name,
-
-        description: description,
+        owned_car,
 
 
+        car_name,
 
-        // VISUAL UPGRADES
+
+        description,
+
+
 
         suspension_front:
         suspension_front || 0,
@@ -243,25 +395,18 @@ app.post("/submit_car", (req,res)=>{
 
 
 
-        // VOTES
-
-        votes: 0,
+        votes:0,
 
 
         submitted_at:
         Date.now()
+
 
     };
 
 
 
     cars.push(car);
-
-
-
-    console.log(
-        `🚗 ${username} submitted ${car_name}`
-    );
 
 
 
@@ -272,7 +417,7 @@ app.post("/submit_car", (req,res)=>{
         message:
         "Car submitted successfully",
 
-        car:car
+        car
 
     });
 
@@ -282,15 +427,17 @@ app.post("/submit_car", (req,res)=>{
 
 
 // =========================
-// GET ALL CARS
+// GET CARS
 // =========================
 
 app.get("/cars",(req,res)=>{
+
 
     checkEvent();
 
 
     res.json(cars);
+
 
 });
 
@@ -313,24 +460,26 @@ app.post("/vote",(req,res)=>{
 
         car_id
 
+
     } = req.body;
 
 
 
     let car =
     cars.find(
-        c => c.id == car_id
+        c=>c.id == car_id
     );
 
 
 
     if(!car){
 
-        return res.status(404).json({
+        return res.json({
 
             success:false,
 
-            message:"Car not found"
+            message:
+            "Car not found"
 
         });
 
@@ -340,7 +489,7 @@ app.post("/vote",(req,res)=>{
 
     if(car.username === username){
 
-        return res.status(400).json({
+        return res.json({
 
             success:false,
 
@@ -354,12 +503,14 @@ app.post("/vote",(req,res)=>{
 
 
     if(
+
         votes.find(
-            v=>v.username === username
+            v=>v.username===username
         )
+
     ){
 
-        return res.status(400).json({
+        return res.json({
 
             success:false,
 
@@ -409,6 +560,7 @@ app.post("/vote",(req,res)=>{
 
 app.get("/leaderboard",(req,res)=>{
 
+
     checkEvent();
 
 
@@ -416,11 +568,11 @@ app.get("/leaderboard",(req,res)=>{
 
         [...cars]
         .sort(
-            (a,b)=>
-            b.votes-a.votes
+            (a,b)=>b.votes-a.votes
         )
 
     );
+
 
 });
 
@@ -432,7 +584,9 @@ app.get("/leaderboard",(req,res)=>{
 
 app.get("/winners",(req,res)=>{
 
+
     res.json(winners);
+
 
 });
 
@@ -444,8 +598,12 @@ app.get("/winners",(req,res)=>{
 
 app.listen(PORT,()=>{
 
+
     console.log(
+
         `🚗 Car Show Server running on ${PORT}`
+
     );
+
 
 });
