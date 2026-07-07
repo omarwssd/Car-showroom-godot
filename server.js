@@ -80,13 +80,9 @@ function resetEvent() {
     }
 
 
-    // clear old event
-
     cars = [];
     votes = [];
 
-
-    // new event
 
     currentEvent = {
 
@@ -104,7 +100,6 @@ function resetEvent() {
         currentEvent.id
     );
 }
-
 
 
 setInterval(checkEvent, 60000);
@@ -143,27 +138,45 @@ app.get("/event", (req,res)=>{
 // SUBMIT CAR
 // =========================
 
-app.post("/submit_car", (req, res) => {
+app.post("/submit_car", (req,res)=>{
 
     checkEvent();
 
 
     const {
+
         username,
+
         car_name,
+
         description,
-        owned_car
+
+        owned_car,
+
+
+        // VISUAL UPGRADES
+
+        suspension_front,
+
+        suspension_rear
+
+
     } = req.body;
 
 
 
-    if (!username || !car_name || !description || !owned_car) {
+    if(
+        !username ||
+        !car_name ||
+        !description ||
+        !owned_car
+    ){
 
         return res.status(400).json({
 
-            success: false,
+            success:false,
 
-            message: "Missing car information"
+            message:"Missing car information"
 
         });
 
@@ -172,13 +185,19 @@ app.post("/submit_car", (req, res) => {
 
 
     // One submission per player
-    if (cars.find(c => c.username === username)) {
+
+    if(
+        cars.find(
+            c => c.username === username
+        )
+    ){
 
         return res.status(400).json({
 
-            success: false,
+            success:false,
 
-            message: "You already submitted a car this event"
+            message:
+            "You already submitted a car this event"
 
         });
 
@@ -188,16 +207,23 @@ app.post("/submit_car", (req, res) => {
 
     const car = {
 
+
         id: Date.now(),
 
-        event_id: currentEvent.id,
+
+        event_id:
+        currentEvent.id,
 
 
-        // Player
+
+        // PLAYER
+
         username: username,
 
 
-        // Car info
+
+        // CAR
+
         owned_car: owned_car,
 
         car_name: car_name,
@@ -205,11 +231,25 @@ app.post("/submit_car", (req, res) => {
         description: description,
 
 
-        // Voting
+
+        // VISUAL UPGRADES
+
+        suspension_front:
+        suspension_front || 0,
+
+
+        suspension_rear:
+        suspension_rear || 0,
+
+
+
+        // VOTES
+
         votes: 0,
 
 
-        submitted_at: Date.now()
+        submitted_at:
+        Date.now()
 
     };
 
@@ -227,11 +267,12 @@ app.post("/submit_car", (req, res) => {
 
     res.json({
 
-        success: true,
+        success:true,
 
-        message: "Car submitted successfully",
+        message:
+        "Car submitted successfully",
 
-        car: car
+        car:car
 
     });
 
@@ -247,6 +288,7 @@ app.post("/submit_car", (req, res) => {
 app.get("/cars",(req,res)=>{
 
     checkEvent();
+
 
     res.json(cars);
 
@@ -264,6 +306,7 @@ app.post("/vote",(req,res)=>{
     checkEvent();
 
 
+
     const {
 
         username,
@@ -276,7 +319,7 @@ app.post("/vote",(req,res)=>{
 
     let car =
     cars.find(
-        c=>c.id == car_id
+        c => c.id == car_id
     );
 
 
@@ -295,8 +338,6 @@ app.post("/vote",(req,res)=>{
 
 
 
-    // no self voting
-
     if(car.username === username){
 
         return res.status(400).json({
@@ -311,8 +352,6 @@ app.post("/vote",(req,res)=>{
     }
 
 
-
-    // one vote per player
 
     if(
         votes.find(
