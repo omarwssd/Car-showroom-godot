@@ -1,6 +1,19 @@
+const express = require("express");
 const fs = require("fs");
 
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+
+// =========================
+// SAVE FILE
+// =========================
+
 const SAVE_FILE = "./data.json";
+
 
 
 // =========================
@@ -8,6 +21,7 @@ const SAVE_FILE = "./data.json";
 // =========================
 
 const EVENT_DURATION = 5 * 24 * 60 * 60 * 1000;
+
 const WAIT_DURATION = 24 * 60 * 60 * 1000;
 
 
@@ -84,13 +98,17 @@ function saveData(){
 
 function loadData(){
 
+
     if(!fs.existsSync(SAVE_FILE)){
+
 
         saveData();
 
+
         console.log(
-            "🆕 Created new car show save"
+            "🆕 Created new save"
         );
+
 
         return;
 
@@ -116,12 +134,15 @@ function loadData(){
         data.currentEvent || currentEvent;
 
 
+
         cars =
         data.cars || [];
 
 
+
         votes =
         data.votes || [];
+
 
 
         winners =
@@ -130,7 +151,7 @@ function loadData(){
 
 
         console.log(
-            "💾 Loaded car show save"
+            "💾 Save loaded"
         );
 
 
@@ -138,12 +159,15 @@ function loadData(){
 
     catch(error){
 
+
         console.log(
-            "❌ Save load error:",
+            "❌ Load error:",
             error
         );
 
+
     }
+
 
 }
 
@@ -220,17 +244,22 @@ function finishEvent(){
             event_id:
             currentEvent.id,
 
+
             username:
             winner.username,
+
 
             car_name:
             winner.car_name,
 
+
             description:
             winner.description,
 
+
             votes:
             winner.votes,
+
 
             date:
             Date.now()
@@ -255,7 +284,7 @@ function finishEvent(){
 
 
     console.log(
-        "⏳ Waiting 1 day before next event"
+        "⏳ Waiting 1 day"
     );
 
 }
@@ -293,7 +322,6 @@ function startNewEvent(){
         endTime:
         Date.now() + EVENT_DURATION
 
-
     };
 
 
@@ -303,18 +331,21 @@ function startNewEvent(){
 
 
     console.log(
-
-        "🚗 New Car Show Event:",
+        "🚗 New Event:",
         currentEvent.id
-
     );
 
 }
 
 
 
+// LOAD SAVE WHEN SERVER STARTS
+
 loadData();
 
+
+
+// CHECK EVERY MINUTE
 
 setInterval(
     checkEvent,
@@ -443,9 +474,11 @@ app.post("/submit_car",(req,res)=>{
 
 
 
+    // ONE SUBMISSION PER PLAYER
+
     if(
 
-        cars.find(
+        cars.some(
             c => c.username === username
         )
 
@@ -464,24 +497,29 @@ app.post("/submit_car",(req,res)=>{
 
 
 
-    let car = {
+    const car = {
 
 
         id:
         Date.now(),
 
 
+
         event_id:
         currentEvent.id,
+
 
 
         username,
 
 
+
         owned_car,
 
 
+
         car_name,
+
 
 
         description,
@@ -491,15 +529,16 @@ app.post("/submit_car",(req,res)=>{
         // VISUAL UPGRADES
 
         suspension_front:
-        suspension_front || 0,
+        Number(suspension_front) || 0,
 
 
         suspension_rear:
-        suspension_rear || 0,
+        Number(suspension_rear) || 0,
 
 
 
         votes:0,
+
 
 
         submitted_at:
@@ -514,7 +553,7 @@ app.post("/submit_car",(req,res)=>{
 
 
 
-    // SAVE TO JSON
+    // SAVE DATA.JSON
 
     saveData();
 
@@ -522,7 +561,9 @@ app.post("/submit_car",(req,res)=>{
 
     console.log(
         "🚗 Car submitted:",
-        car_name
+        car_name,
+        "by",
+        username
     );
 
 
@@ -531,8 +572,10 @@ app.post("/submit_car",(req,res)=>{
 
         success:true,
 
+
         message:
         "Car submitted successfully",
+
 
         car
 
