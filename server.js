@@ -1,9 +1,6 @@
-const express = require("express");
+const fs = require("fs");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
+const SAVE_FILE = "./data.json";
 
 
 // =========================
@@ -16,7 +13,7 @@ const WAIT_DURATION = 24 * 60 * 60 * 1000;
 
 
 // =========================
-// EVENT
+// DEFAULT EVENT
 // =========================
 
 let currentEvent = {
@@ -47,6 +44,112 @@ let winners = [];
 
 
 // =========================
+// SAVE SYSTEM
+// =========================
+
+function saveData(){
+
+    const data = {
+
+        currentEvent,
+
+        cars,
+
+        votes,
+
+        winners
+
+    };
+
+
+    fs.writeFileSync(
+
+        SAVE_FILE,
+
+        JSON.stringify(
+            data,
+            null,
+            4
+        )
+
+    );
+
+}
+
+
+
+// =========================
+// LOAD SYSTEM
+// =========================
+
+function loadData(){
+
+    if(!fs.existsSync(SAVE_FILE)){
+
+        saveData();
+
+        console.log(
+            "🆕 Created new car show save"
+        );
+
+        return;
+
+    }
+
+
+
+    try{
+
+
+        const data = JSON.parse(
+
+            fs.readFileSync(
+                SAVE_FILE,
+                "utf8"
+            )
+
+        );
+
+
+
+        currentEvent =
+        data.currentEvent || currentEvent;
+
+
+        cars =
+        data.cars || [];
+
+
+        votes =
+        data.votes || [];
+
+
+        winners =
+        data.winners || [];
+
+
+
+        console.log(
+            "💾 Loaded car show save"
+        );
+
+
+    }
+
+    catch(error){
+
+        console.log(
+            "❌ Save load error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+// =========================
 // EVENT CHECK
 // =========================
 
@@ -56,8 +159,6 @@ function checkEvent(){
     let now = Date.now();
 
 
-
-    // 5 DAY EVENT END
 
     if(
 
@@ -72,8 +173,6 @@ function checkEvent(){
     }
 
 
-
-    // 1 DAY WAIT END
 
     if(
 
@@ -139,23 +238,19 @@ function finishEvent(){
         });
 
 
-
-        console.log(
-            "🏆 Winner:",
-            winner.username
-        );
-
     }
 
 
-
-    // Enter waiting period
 
     currentEvent.state = "waiting";
 
 
     currentEvent.endTime =
     Date.now() + WAIT_DURATION;
+
+
+
+    saveData();
 
 
 
@@ -203,6 +298,10 @@ function startNewEvent(){
 
 
 
+    saveData();
+
+
+
     console.log(
 
         "🚗 New Car Show Event:",
@@ -212,6 +311,9 @@ function startNewEvent(){
 
 }
 
+
+
+loadData();
 
 
 setInterval(
@@ -344,7 +446,7 @@ app.post("/submit_car",(req,res)=>{
     if(
 
         cars.find(
-            c=>c.username===username
+            c => c.username === username
         )
 
     ){
@@ -386,6 +488,8 @@ app.post("/submit_car",(req,res)=>{
 
 
 
+        // VISUAL UPGRADES
+
         suspension_front:
         suspension_front || 0,
 
@@ -407,6 +511,19 @@ app.post("/submit_car",(req,res)=>{
 
 
     cars.push(car);
+
+
+
+    // SAVE TO JSON
+
+    saveData();
+
+
+
+    console.log(
+        "🚗 Car submitted:",
+        car_name
+    );
 
 
 
@@ -454,6 +571,21 @@ app.post("/vote",(req,res)=>{
 
 
 
+    if(currentEvent.state !== "running"){
+
+        return res.json({
+
+            success:false,
+
+            message:
+            "Car show is currently closed"
+
+        });
+
+    }
+
+
+
     const {
 
         username,
@@ -467,7 +599,7 @@ app.post("/vote",(req,res)=>{
 
     let car =
     cars.find(
-        c=>c.id == car_id
+        c => c.id == car_id
     );
 
 
@@ -505,7 +637,7 @@ app.post("/vote",(req,res)=>{
     if(
 
         votes.find(
-            v=>v.username===username
+            v => v.username === username
         )
 
     ){
@@ -540,6 +672,21 @@ app.post("/vote",(req,res)=>{
 
 
 
+    // SAVE VOTE
+
+    saveData();
+
+
+
+    console.log(
+        "🗳 Vote:",
+        username,
+        "->",
+        car.car_name
+    );
+
+
+
     res.json({
 
         success:true,
@@ -568,7 +715,8 @@ app.get("/leaderboard",(req,res)=>{
 
         [...cars]
         .sort(
-            (a,b)=>b.votes-a.votes
+            (a,b)=>
+            b.votes - a.votes
         )
 
     );
