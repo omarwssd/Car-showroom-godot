@@ -55,6 +55,38 @@ let votes = [];
 
 let winners = [];
 
+// =========================
+// LOAD SAVE DATA
+// =========================
+
+function loadData(){
+
+    if(!fs.existsSync(SAVE_FILE)){
+        saveData();
+        return;
+    }
+
+
+    const data = JSON.parse(
+        fs.readFileSync(SAVE_FILE)
+    );
+
+
+    currentEvent = data.currentEvent || currentEvent;
+
+    cars = data.cars || [];
+
+    votes = data.votes || [];
+
+    winners = data.winners || [];
+
+
+    console.log("✅ Data loaded");
+
+}
+
+
+loadData();
 
 
 // =========================
@@ -66,26 +98,20 @@ function saveData(){
     const data = {
 
         currentEvent,
-
         cars,
-
         votes,
-
         winners
 
     };
 
 
     fs.writeFileSync(
-
         SAVE_FILE,
-
         JSON.stringify(
             data,
             null,
             4
         )
-
     );
 
 }
@@ -179,17 +205,12 @@ function loadData(){
 
 function checkEvent(){
 
-
     let now = Date.now();
 
 
-
     if(
-
         currentEvent.state === "running" &&
-
         now >= currentEvent.endTime
-
     ){
 
         finishEvent();
@@ -199,17 +220,17 @@ function checkEvent(){
 
 
     if(
-
         currentEvent.state === "waiting" &&
-
         now >= currentEvent.endTime
-
     ){
 
         startNewEvent();
 
     }
 
+
+    // SAVE TIMER
+    saveData();
 
 }
 
@@ -349,7 +370,7 @@ loadData();
 
 setInterval(
     checkEvent,
-    60000
+    10000
 );
 
 
